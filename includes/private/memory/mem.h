@@ -37,6 +37,7 @@ extern uint8_t romext[32768];
 extern int readlnum, writelnum;
 extern int memspeed[11];
 extern uint32_t biosmask;
+extern int memwaitstate;
 
 void mem_mapping_add(mem_mapping_t *mapping, uint32_t base, uint32_t size, uint8_t (*read_b)(uint32_t addr, void *p),
                      uint16_t (*read_w)(uint32_t addr, void *p), uint32_t (*read_l)(uint32_t addr, void *p),
