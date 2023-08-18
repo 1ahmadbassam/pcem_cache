@@ -342,6 +342,13 @@ void mmu_invalidate(uint32_t addr) {
         flushmmucache_cr3();
 }
 
+int memspeed[11]={256,320,384,512,640,768,1024,1152,1280,1536,1920};
+int memwaitstate;
+
+static int cachelookup[256];
+static uint8_t *cachelookup2;
+static int cachelnext;
+
 void addreadlookup(uint32_t virt, uint32_t phys) {
         //        return;
         //        printf("Addreadlookup %08X %08X %08X %08X %08X %08X %02X %08X\n",virt,phys,cs,ds,es,ss,opcode,pc);
@@ -356,6 +363,17 @@ void addreadlookup(uint32_t virt, uint32_t phys) {
                                         exit(-1);
                                 }*/
                 return;
+        }
+
+        if (!cachelookup2[phys >> 12])
+        {
+                readlnum++;
+                cycles-=memwaitstate;
+                if (cachelookup[cachelnext] != 0xffffffff)
+                   cachelookup2[cachelookup[cachelnext]] = 0;
+                cachelookup[cachelnext] = phys >> 12;
+                cachelookup2[phys >> 12] = 1;
+                cachelnext = (cachelnext + 1) & (cachesize - 1);
         }
 
         if (readlookup[readlnext] != 0xFFFFFFFF) {
@@ -385,6 +403,19 @@ void addwritelookup(uint32_t virt, uint32_t phys) {
                                 }*/
                 return;
         }
+
+        if (!cachelookup2[phys >> 12])
+        {
+                writelnum++;
+                cycles-=memwaitstate;
+                if (cachelookup[cachelnext] != 0xffffffff)
+                   cachelookup2[cachelookup[cachelnext]] = 0;
+                cachelookup[cachelnext] = phys >> 12;
+                cachelookup2[phys >> 12] = 1;
+                cachelnext = (cachelnext + 1) & (cachesize - 1);
+        }
+
+        cycles-=memwaitstate;
 
         if (writelookup[writelnext] != -1) {
                 page_lookup[writelookup[writelnext]] = NULL;
@@ -1020,9 +1051,33 @@ void mem_write_null(uint32_t addr, uint8_t val, void *p) {}
 void mem_write_nullw(uint32_t addr, uint16_t val, void *p) {}
 void mem_write_nulll(uint32_t addr, uint32_t val, void *p) {}
 
+void mem_updatecache()
+{
+        flushmmucache();
+        if (!is386)
+        {
+                cachesize=256;
+                memwaitstate=0;
+                return;
+        }
+        if (cpu_16bitbus)
+           memwaitstate = 512 * cpu_multi;
+        else
+        /*
+                By experimentation, it seems that the larger the value is here the more reliable is the emulator,
+                at the expense of speed of course. I have opted for the current implementation instead of the default
+                in PCem v11 (which was 384 * cpu_multi) because it seems to be the best trade-off between speed and reliability.
+                Feel free to experiment with different values.
+        */
+           memwaitstate = 156 * cpu_multi;
+        cachesize = 256; // Note, in PCem v11 this would have been controlled by the setting in the emulator dialog but here we force it to the "A Lot" setting.
+}
+
 void mem_invalidate_range(uint32_t start_addr, uint32_t end_addr) {
         start_addr &= ~PAGE_MASK_MASK;
         end_addr = (end_addr + PAGE_MASK_MASK) & ~PAGE_MASK_MASK;
+
+        cachelookup2 = malloc(1024 * 1024);
 
         for (; start_addr <= end_addr; start_addr += (1 << PAGE_MASK_SHIFT)) {
                 uint64_t mask = (uint64_t)1 << ((start_addr >> PAGE_MASK_SHIFT) & PAGE_MASK_MASK);
@@ -1037,6 +1092,7 @@ void mem_invalidate_range(uint32_t start_addr, uint32_t end_addr) {
                 }
         }
 }
+
 
 static inline int mem_mapping_read_allowed(uint32_t flags, int state) {
         //        pclog("mem_mapping_read_allowed: flags=%x state=%x\n", flags, state);
@@ -1320,6 +1376,7 @@ void mem_set_704kb() {
 void mem_init() {
         readlookup2 = malloc(1024 * 1024 * sizeof(uintptr_t));
         writelookup2 = malloc(1024 * 1024 * sizeof(uintptr_t));
+        cachelookup2 = malloc(1024 * 1024);
         page_lookup = malloc((1 << 20) * sizeof(page_t *));
 
         memset(ff_array, 0xff, sizeof(ff_array));
