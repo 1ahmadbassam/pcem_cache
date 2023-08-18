@@ -1,3 +1,4 @@
+# DISCLAIMER: This is not a fork to be merged into PCem; its entire purpose is to temporarily remedy this major problem with 8 year old code in hopes PCem/86box devs finally care to actually fix it
 ## What is this?
 This fork does one very simple thing: it reimplements memory cache from PCem v11 (which was removed in v12's dev, see [this](https://github.com/sarah-walker-pcem/pcem/commit/f311c9e17fbf6b0e0f6478c1c6f896b95858b02c)).
 
