@@ -167,6 +167,7 @@ void onesec() {
 
 void pc_reset() {
         resetx86();
+        mem_updatecache();
         // timer_reset();
         dma_reset();
         fdc_reset();
@@ -560,6 +561,7 @@ void speedchanged() {
                 setpitclock(models[model]->cpu[cpu_manufacturer].cpus[cpu].rspeed);
         else
                 setpitclock(14318184.0);
+        mem_updatecache();
 }
 
 void closepc() {
