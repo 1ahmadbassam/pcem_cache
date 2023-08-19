@@ -15,8 +15,7 @@ Note: I don't really understand how PCem even works, let alone why this occurs; 
 - Attempting to do the above actions would result in major (but momentary) slowdowns. On the long run, this has caused my clock to desynch around 5 mins on the guest in around 5 hours of real world time. This doesn't seem much; however, when the internet is involved, things get corrupted fast.
 - Attempting to use this build observes the same behavior in PCem v11, despite being a little slower in operation than latest PCem. However, reliability is to be preffered over speed.
 
-In perspective, the same concept should work on 86box too (to be tested).
-
+__The same concept has been tested working on 86box but applying it is a little more involved. Message me if interested.__
 ### Building on Windows (MSYS2)
 Make sure to use MINGW32 (32-bit is fastest).
 You also obviously need the toolchain before building this.
